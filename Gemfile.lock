@@ -89,6 +89,8 @@ GEM
     debug_inspector (0.0.3)
     erubi (1.7.1)
     ffi (1.9.25)
+    figaro (1.1.1)
+      thor (~> 0.14)
     formatador (0.2.5)
     globalid (0.4.1)
       activesupport (>= 4.2.0)
@@ -107,6 +109,7 @@ GEM
     guard-bundler-audit (0.1.4)
       bundler-audit (>= 0.3.1)
       guard (~> 2.0)
+    honeybadger (4.1.0)
     i18n (1.1.1)
       concurrent-ruby (~> 1.0)
     jaro_winkler (1.5.1)
@@ -232,8 +235,11 @@ DEPENDENCIES
   capistrano-rails
   capistrano-rbenv
   capistrano3-puma
+  figaro
+  honeybadger (~> 4.0)
   listen (>= 3.0.5, < 3.2)
   pry-byebug
+  puma (~> 3.7)
   rails (~> 5.2.1)
   reach_linters!
   spring

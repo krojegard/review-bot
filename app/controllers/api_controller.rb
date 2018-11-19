@@ -135,6 +135,6 @@ class ApiController < ApplicationController
   end
 
   def verify_github_secret
-    head 200 unless headers['X-Hub-Signature'] == ENV['GITHUB_SECRET_TOKEN']
+    head 401 unless headers['X-Hub-Signature'] == ENV['GITHUB_SECRET_TOKEN']
   end
 end

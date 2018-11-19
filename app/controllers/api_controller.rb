@@ -120,6 +120,7 @@ class ApiController < ApplicationController
     return [] unless response.code == 200
 
     content = JSON.parse(response.body)['content']
+    logger.info "IGNORED FILES:::: " + Base64.decode64(content).to_s
     Base64.decode64(content).split("\n")
   end
 

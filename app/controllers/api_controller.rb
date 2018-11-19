@@ -143,6 +143,3 @@ class ApiController < ApplicationController
     head 401 unless Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
   end
 end
-
-def verify_signature(payload_body)
-end

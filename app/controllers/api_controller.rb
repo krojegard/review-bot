@@ -137,6 +137,9 @@ class ApiController < ApplicationController
   def verify_github_secret
     logger.info "SECRET FROM PARAMS: #{params[:hook][:config][:secret]}"
     logger.info "SECRET FROM YAML: #{ENV['GITHUB_SECRET_TOKEN']}"
+
+    logger.info "HEADERS: #{request.headers.inspect}"
+
     head 401 unless params[:hook][:config][:secret] == ENV['GITHUB_SECRET_TOKEN']
   end
 end

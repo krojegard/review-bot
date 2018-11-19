@@ -27,8 +27,8 @@ set :branch, 'master'
 # role :app, %w{deploy@example.com}, my_property: :my_value
 # role :web, %w{user1@primary.com user2@additional.com}, other_property: :other_value
 # role :db,  %w{deploy@example.com}
-role :app, "review-bot.reachnetwork.com"
-role :web, "review-bot.reachnetwork.com"
+role :app, "bots.reachnetwork.com"
+role :web, "bots.reachnetwork.com"
 
 set :rbenv_type, :user # Defaults to: :auto
 set :rbenv_ruby, File.read('.ruby-version').strip # Defaults to: 'default'

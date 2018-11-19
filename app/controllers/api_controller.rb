@@ -35,7 +35,8 @@ class ApiController < ApplicationController
   def match?(pattern, file)
     return false if pattern.blank?
 
-    pattern.gsub!('/', '\/').gsub!('*', '[^\/]*')
+    pattern.gsub!('/', '\/')
+    pattern.gsub!('*', '[^\/]*')
     regex_pattern = if pattern.start_with?('\/')
       /^#{pattern}$/ # Match the pattern exactly
     else

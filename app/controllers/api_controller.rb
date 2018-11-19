@@ -24,7 +24,8 @@ class ApiController < ApplicationController
     changed.each do |changed_file|
       match = false
       auto_approve.each do |pattern|
-        next if match || match?(pattern, changed_file)
+        next if match
+        match = true if match?(pattern, changed_file)
       end
       return false unless match
     end
@@ -38,6 +39,7 @@ class ApiController < ApplicationController
     pattern.gsub!('/', '\/')
     pattern.gsub!('*', '[^\/]*')
     regex_pattern = if pattern.start_with?('\/')
+      pattern.gsub!(/^\//, '')
       /^#{pattern}$/ # Match the pattern exactly
     else
       /#{pattern}$/ # Only match the end of the file name

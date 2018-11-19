@@ -85,7 +85,7 @@ class ApiController < ApplicationController
     logger.info response.body
     logger.info "STATUS CODE: " + response.code
 
-    return unless response.code == 200
+    return unless response.code == '200'
 
     files = JSON.parse(response.body)
 
@@ -117,7 +117,7 @@ class ApiController < ApplicationController
     logger.info response.body
     logger.info "STATUS CODE: " + response.code
 
-    return [] unless response.code == 200
+    return [] unless response.code == '200'
 
     content = JSON.parse(response.body)['content']
     logger.info "IGNORED FILES:::: " + Base64.decode64(content).to_s
@@ -140,7 +140,7 @@ class ApiController < ApplicationController
     logger.info response.body
     logger.info "STATUS CODE: " + response.code
 
-    return unless response.code == 200
+    return unless response.code == '200'
 
     commits = JSON.parse(response.body)
     commits.last['sha']

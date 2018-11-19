@@ -1,5 +1,5 @@
 # Review Bot
-Review Bot will automatically approve pull requests that only make trivial changes to the codebase. You can control which pull requests are considered trivial by editing the `.auto-approve` file in the root directory of your project. If all the files that changed match a pattern in that file, Review Bot will automatically approve the pull request on behalf of whatever user you set it up with. 
+Review Bot will automatically approve pull requests that only make trivial changes to the codebase. You can control which pull requests are considered trivial by editing the `.auto-approve` file in the root directory of your project. If all the files that changed match a pattern in that file, Review Bot will automatically approve the pull request on behalf of whatever user you set it up with. The bot won't do anything if the PR has already been approved for the most recent commit.
 
 ## Installation
 1. Deploy this code on a server somewhere. Make sure it uses HTTPS since it will need access to your code base.

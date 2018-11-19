@@ -7,9 +7,8 @@ class ApiController < ApplicationController
 
     logger.info "FULL REQUEST: "
     pr = params['api']['pull_request'].to_unsafe_h
-    pr_url = pr['url']
 
-    approve_request(pr_url) if files_match?(pr)
+    approve_request(pr) if files_match?(pr) && needs_review?(pr)
 
     head 200
   end
@@ -17,7 +16,7 @@ class ApiController < ApplicationController
   def files_match?(pull_request)
     auto_approve = ignored_files(pull_request)
 
-    changed = changed_files(pull_request['url'])
+    changed = changed_files(pull_request)
 
     return false if changed.nil?
 
@@ -25,12 +24,39 @@ class ApiController < ApplicationController
       match = false
       auto_approve.each do |pattern|
         next if match
+
         match = true if match?(pattern, changed_file)
       end
       return false unless match
     end
 
     true
+  end
+
+  def needs_review?(pull_request)
+    uri = URI.parse(pull_request['url'] + '/reviews')
+    request = ::Net::HTTP::Get.new(
+      uri,
+      {
+        'Authorization' => "token #{ENV['GITHUB_API_KEY']}"
+      }
+    )
+
+    response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+      http.request(request)
+    end
+
+    return true unless response.code == '200'
+
+    last_review = JSON.parse(response.body).last
+    return true if last_review.nil?
+
+    review_is_current = last_review['commit_id'] == pull_request['head']['sha']
+    review_is_approved = last_review['state'] == 'APPROVED'
+
+    return true unless review_is_current && review_is_approved
+
+    false
   end
 
   def match?(pattern, file)
@@ -48,8 +74,8 @@ class ApiController < ApplicationController
     file =~ regex_pattern
   end
 
-  def approve_request(pr_url)
-    uri = URI(pr_url + '/reviews')
+  def approve_request(pull_request)
+    uri = URI(pull_request['uri'] + '/reviews')
     request = ::Net::HTTP::Post.new(
       uri,
       {
@@ -58,12 +84,12 @@ class ApiController < ApplicationController
       }
     )
 
-    sha = get_last_commit_sha(pr_url)
-    return if sha.nil?
+    sha = pull_request['head']['sha']
 
     request.body = {
-      commit_id:  sha,
-      event: 'APPROVE'
+      commit_id: sha,
+      event: 'APPROVE',
+      body: "This PR has been auto-approved since it contains changes that don't require a human review."
     }.to_json
 
     ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
@@ -71,8 +97,8 @@ class ApiController < ApplicationController
     end
   end
 
-  def changed_files(pr_url)
-    uri = URI.parse(pr_url + '/files')
+  def changed_files(pull_request)
+    uri = URI.parse(pull_request['url'] + '/files')
     request = ::Net::HTTP::Get.new(
       uri,
       {
@@ -116,25 +142,6 @@ class ApiController < ApplicationController
 
     content = JSON.parse(response.body)['content']
     Base64.decode64(content).split("\n")
-  end
-
-  def get_last_commit_sha(pr_url)
-    uri = URI.parse(pr_url + '/commits')
-    request = ::Net::HTTP::Get.new(
-      uri,
-      {
-        'Authorization' => "token #{ENV['GITHUB_API_KEY']}"
-      }
-    )
-
-    response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-      http.request(request)
-    end
-
-    return unless response.code == '200'
-
-    commits = JSON.parse(response.body)
-    commits.last['sha']
   end
 
   def verify_github_secret

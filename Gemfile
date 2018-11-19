@@ -8,6 +8,7 @@ gem 'rails', '~> 5.2.1'
 # Use Puma as the app server
 gem 'puma', '~> 3.7'
 
+gem 'figaro'
 gem 'honeybadger', '~> 4.0'
 
 group :development do

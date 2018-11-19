@@ -47,6 +47,7 @@ class ApiController < ApplicationController
 
   def approve_request(pr_url)
     uri = URI(pr_url + '/reviews')
+    logger.info uri
     request = ::Net::HTTP::Post.new(
       uri,
       {
@@ -70,6 +71,7 @@ class ApiController < ApplicationController
 
   def changed_files(pr_url)
     uri = URI.parse(pr_url + '/files')
+    logger.info uri
     request = ::Net::HTTP::Get.new(
       uri,
       {
@@ -100,6 +102,7 @@ class ApiController < ApplicationController
     sha = pull_request['base']['sha']
 
     uri = URI.parse("#{base_url}/.auto-approve?ref=#{sha}")
+    logger.info uri
     request = ::Net::HTTP::Get.new(
       uri,
       {
@@ -120,6 +123,7 @@ class ApiController < ApplicationController
 
   def get_last_commit_sha(pr_url)
     uri = URI.parse(pr_url + '/commits')
+    logger.info uri
     request = ::Net::HTTP::Get.new(
       uri,
       {

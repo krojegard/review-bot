@@ -135,11 +135,14 @@ class ApiController < ApplicationController
   end
 
   def verify_github_secret
-    logger.info "SECRET FROM PARAMS: #{params[:hook][:config][:secret]}"
+    signature = 'sha1=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), ENV['GITHUB_SECRET_TOKEN'], payload_body)
+    logger.info "HASH SIGNATURE FROM YAML: #{signature}"
     logger.info "SECRET FROM YAML: #{ENV['GITHUB_SECRET_TOKEN']}"
-
     logger.info "HEADERS: #{request.headers.inspect}"
 
-    head 401 unless params[:hook][:config][:secret] == ENV['GITHUB_SECRET_TOKEN']
+    head 401 unless Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
   end
+end
+
+def verify_signature(payload_body)
 end

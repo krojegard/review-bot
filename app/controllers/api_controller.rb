@@ -101,7 +101,7 @@ class ApiController < ApplicationController
     base_url = pull_request['base']['repo']['url']
     sha = pull_request['base']['sha']
 
-    uri = URI.parse("#{base_url}/.auto-approve?ref=#{sha}")
+    uri = URI.parse("#{base_url}/contents/.auto-approve?ref=#{sha}")
     logger.info uri
     request = ::Net::HTTP::Get.new(
       uri,

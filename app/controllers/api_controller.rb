@@ -75,6 +75,7 @@ class ApiController < ApplicationController
 
     file_names = []
     files.each do |file|
+      logger.info file
       file_names << file['filename']
     end
 

@@ -39,7 +39,7 @@ class ApiController < ApplicationController
     pattern.gsub!('/', '\/')
     pattern.gsub!('*', '[^\/]*')
     regex_pattern = if pattern.start_with?('\/')
-      pattern.gsub!(/^\//, '')
+      pattern.gsub!(/^\\\//, '')
       /^#{pattern}$/ # Match the pattern exactly
     else
       /#{pattern}$/ # Only match the end of the file name

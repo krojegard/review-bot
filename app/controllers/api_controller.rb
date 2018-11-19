@@ -7,8 +7,6 @@ class ApiController < ApplicationController
 
     approve_request(pr_url) if files_match?(pr)
 
-    logger.info "FILES MATCH: #{files_match?(pr)}"
-
     head 200
   end
 
@@ -17,8 +15,6 @@ class ApiController < ApplicationController
 
     changed = changed_files(pull_request['url'])
 
-    logger.info "AUTO_APPROVE: #{auto_approve}"
-    logger.info "CHANGED: #{changed}"
     return false if changed.nil?
 
     changed.each do |changed_file|
@@ -50,7 +46,6 @@ class ApiController < ApplicationController
 
   def approve_request(pr_url)
     uri = URI(pr_url + '/reviews')
-    logger.info uri
     request = ::Net::HTTP::Post.new(
       uri,
       {
@@ -74,7 +69,6 @@ class ApiController < ApplicationController
 
   def changed_files(pr_url)
     uri = URI.parse(pr_url + '/files')
-    logger.info uri
     request = ::Net::HTTP::Get.new(
       uri,
       {
@@ -85,8 +79,6 @@ class ApiController < ApplicationController
     response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
-    logger.info response.body
-    logger.info "STATUS CODE: " + response.code
 
     return unless response.code == '200'
 
@@ -94,7 +86,6 @@ class ApiController < ApplicationController
 
     file_names = []
     files.each do |file|
-      logger.info file
       file_names << file['filename']
     end
 
@@ -106,7 +97,6 @@ class ApiController < ApplicationController
     sha = pull_request['base']['sha']
 
     uri = URI.parse("#{base_url}/contents/.auto-approve?ref=#{sha}")
-    logger.info uri
     request = ::Net::HTTP::Get.new(
       uri,
       {
@@ -117,19 +107,15 @@ class ApiController < ApplicationController
     response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
-    logger.info response.body
-    logger.info "STATUS CODE: " + response.code
 
     return [] unless response.code == '200'
 
     content = JSON.parse(response.body)['content']
-    logger.info "IGNORED FILES:::: " + Base64.decode64(content).to_s
     Base64.decode64(content).split("\n")
   end
 
   def get_last_commit_sha(pr_url)
     uri = URI.parse(pr_url + '/commits')
-    logger.info uri
     request = ::Net::HTTP::Get.new(
       uri,
       {
@@ -140,8 +126,6 @@ class ApiController < ApplicationController
     response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
-    logger.info response.body
-    logger.info "STATUS CODE: " + response.code
 
     return unless response.code == '200'
 

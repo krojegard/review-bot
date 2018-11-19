@@ -1,5 +1,6 @@
 class ApiController < ApplicationController
   skip_before_action :verify_authenticity_token
+  before_action :verify_github_secret
 
   def pull_request
     pr = params['api']['pull_request'].to_unsafe_h
@@ -131,5 +132,9 @@ class ApiController < ApplicationController
 
     commits = JSON.parse(response.body)
     commits.last['sha']
+  end
+
+  def verify_github_secret
+    head 200 unless headers['X-Hub-Signature'] == ENV['GITHUB_SECRET_TOKEN']
   end
 end

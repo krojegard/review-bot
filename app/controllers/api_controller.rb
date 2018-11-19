@@ -3,6 +3,9 @@ class ApiController < ApplicationController
   before_action :verify_github_secret
 
   def pull_request
+    head 400 unless request.env['HTTP_X_HUB_SIGNATURE'] == 'pull_request'
+
+    logger.info "FULL REQUEST: "
     pr = params['api']['pull_request'].to_unsafe_h
     pr_url = pr['url']
 

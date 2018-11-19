@@ -6,7 +6,10 @@ class ApiController < ApplicationController
     pr_url = pr['url']
 
     # Put more advanced logic here
+    
     approve_request(pr_url) if files_match?(pr)
+
+    logger.info "FILES MATCH: #{files_match?(pr)}"
 
     head 200
   end
@@ -14,7 +17,14 @@ class ApiController < ApplicationController
   def files_match?(pull_request)
     auto_approve = ignored_files(pull_request)
 
-    changed_files(pull_request['url']).each do |changed_file|
+    changed = changed_files(pull_request['url'])
+
+    logger.info "AUTO_APPROVE: #{auto_approve}"
+    logger.info "CHANGED: #{changed}"
+    return false if changed.nil?
+
+
+    changed.each do |changed_file|
       match = false
       auto_approve.each do |pattern|
         next if match || match?(pattern, changed_file)
@@ -48,8 +58,11 @@ class ApiController < ApplicationController
       }
     )
 
+    sha = get_last_commit_sha(pr_url)
+    return if sha.nil?
+
     request.body = {
-      commit_id:  get_last_commit_sha(pr_url),
+      commit_id:  sha,
       event: 'APPROVE'
     }.to_json
 
@@ -70,6 +83,8 @@ class ApiController < ApplicationController
     response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
+
+    return unless response.code == 200
 
     files = JSON.parse(response.body)
 
@@ -116,6 +131,8 @@ class ApiController < ApplicationController
     response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
+
+    return nil unless response.code == 200
 
     commits = JSON.parse(response.body)
     commits.last['sha']

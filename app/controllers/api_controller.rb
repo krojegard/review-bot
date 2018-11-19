@@ -5,8 +5,6 @@ class ApiController < ApplicationController
     pr = params['api']['pull_request'].to_unsafe_h
     pr_url = pr['url']
 
-    # Put more advanced logic here
-    
     approve_request(pr_url) if files_match?(pr)
 
     logger.info "FILES MATCH: #{files_match?(pr)}"
@@ -22,7 +20,6 @@ class ApiController < ApplicationController
     logger.info "AUTO_APPROVE: #{auto_approve}"
     logger.info "CHANGED: #{changed}"
     return false if changed.nil?
-
 
     changed.each do |changed_file|
       match = false
@@ -83,6 +80,7 @@ class ApiController < ApplicationController
     response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
+    logger.info response.body
 
     return unless response.code == 200
 
@@ -112,6 +110,7 @@ class ApiController < ApplicationController
     response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
+    logger.info response.body
 
     return [] unless response.code == 200
 
@@ -131,8 +130,9 @@ class ApiController < ApplicationController
     response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
+    logger.info response.body
 
-    return nil unless response.code == 200
+    return unless response.code == 200
 
     commits = JSON.parse(response.body)
     commits.last['sha']

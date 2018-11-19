@@ -83,6 +83,7 @@ class ApiController < ApplicationController
       http.request(request)
     end
     logger.info response.body
+    logger.info "STATUS CODE: " + response.code
 
     return unless response.code == 200
 
@@ -114,6 +115,7 @@ class ApiController < ApplicationController
       http.request(request)
     end
     logger.info response.body
+    logger.info "STATUS CODE: " + response.code
 
     return [] unless response.code == 200
 
@@ -135,6 +137,7 @@ class ApiController < ApplicationController
       http.request(request)
     end
     logger.info response.body
+    logger.info "STATUS CODE: " + response.code
 
     return unless response.code == 200
 

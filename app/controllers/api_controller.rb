@@ -75,7 +75,7 @@ class ApiController < ApplicationController
   end
 
   def approve_request(pull_request)
-    uri = URI(pull_request['uri'] + '/reviews')
+    uri = URI(pull_request['url'] + '/reviews')
     request = ::Net::HTTP::Post.new(
       uri,
       {

@@ -53,10 +53,9 @@ class ApiController < ApplicationController
       event: 'APPROVE'
     }.to_json
 
-    result = ::Net::HTTP.new(uri.host, uri.port) do |http|
+    ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
-    puts result
   end
 
   def changed_files(pr_url)
@@ -68,7 +67,7 @@ class ApiController < ApplicationController
       }
     )
 
-    response = ::Net::HTTP.new(uri.host, uri.port) do |http|
+    response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
 
@@ -94,7 +93,7 @@ class ApiController < ApplicationController
       }
     )
 
-    response = ::Net::HTTP.new(uri.host, uri.port) do |http|
+    response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
 
@@ -113,7 +112,7 @@ class ApiController < ApplicationController
       }
     )
 
-    response = ::Net::HTTP.new(uri.host, uri.port) do |http|
+    response = ::Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.request(request)
     end
 

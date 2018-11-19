@@ -135,7 +135,7 @@ class ApiController < ApplicationController
   end
 
   def verify_github_secret
-    signature = 'sha1=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), ENV['GITHUB_SECRET_TOKEN'], payload_body)
+    signature = 'sha1=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), ENV['GITHUB_SECRET_TOKEN'], request.raw_post)
     logger.info "HASH SIGNATURE FROM YAML: #{signature}"
     logger.info "SECRET FROM YAML: #{ENV['GITHUB_SECRET_TOKEN']}"
     logger.info "HEADERS: #{request.headers.inspect}"

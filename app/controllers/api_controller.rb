@@ -36,7 +36,7 @@ class ApiController < ApplicationController
       end
     end
 
-    if files_match(pr)
+    if files_match
       logger.info "All files match, #{pr['base']['repo']['full_name']} can be automatically merged into #{pr['head']['repo']['full_name']}"
     else
       logger.info 'Some of the changed files are not in .auto-approve; this PR requires human review'

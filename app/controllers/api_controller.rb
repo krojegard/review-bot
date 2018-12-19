@@ -167,7 +167,7 @@ class ApiController < ApplicationController
 
     if Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
       head 401
-      logger.info "Invalid authenticity token given by #{pr['base']['repo']['full_name']}"
+      logger.info "Invalid authenticity token given by #{pr['base']['repo']['full_name']} on branch #{pr['base']['label']}"
     end
   end
 end

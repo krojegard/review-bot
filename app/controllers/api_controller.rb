@@ -165,7 +165,7 @@ class ApiController < ApplicationController
 
     signature = 'sha1=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), ENV['GITHUB_SECRET_TOKEN'], request.raw_post)
 
-    if Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
+    unless Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
       head 401
       logger.info "Invalid authenticity token given by #{pr['base']['repo']['full_name']} on branch #{pr['base']['label']}"
     end

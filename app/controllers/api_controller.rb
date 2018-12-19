@@ -39,7 +39,7 @@ class ApiController < ApplicationController
     if files_match(pr)
       logger.info "All files match, #{pr['base']['repo']['full_name']} can be automatically merged into #{pr['head']['repo']['full_name']}"
     else
-      logger.info "Some of the changed files are not in .auto-approve; this PR requires human review"
+      logger.info 'Some of the changed files are not in .auto-approve; this PR requires human review'
     end
 
     files_match
@@ -168,5 +168,6 @@ class ApiController < ApplicationController
     if Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
       head 401
       logger.info "Invalid authenticity token given by #{pr['base']['repo']['full_name']}"
+    end
   end
 end

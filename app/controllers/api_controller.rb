@@ -3,9 +3,11 @@ class ApiController < ApplicationController
   before_action :verify_github_secret
 
   def pull_request
-    head 400 unless request.env['HTTP_X_HUB_SIGNATURE'] == 'pull_request'
+    unless request.env['HTTP_X_HUB_SIGNATURE'] == 'pull_request'
+      head 400
+      logger.info "Received a request that wasn't a pull_request: #{request.env['HTTP_X_HUB_SIGNATURE']}"
+    end
 
-    logger.info "FULL REQUEST: "
     pr = params['api']['pull_request'].to_unsafe_h
 
     approve_request(pr) if files_match?(pr) && needs_review?(pr)
@@ -20,6 +22,7 @@ class ApiController < ApplicationController
 
     return false if changed.nil?
 
+    files_match = true
     changed.each do |changed_file|
       match = false
       auto_approve.each do |pattern|
@@ -27,10 +30,19 @@ class ApiController < ApplicationController
 
         match = true if match?(pattern, changed_file)
       end
-      return false unless match
+      unless match
+        files_match = false
+        break
+      end
     end
 
-    true
+    if files_match(pr)
+      logger.info "All files match, #{pr['base']['repo']['full_name']} can be automatically merged into #{pr['head']['repo']['full_name']}"
+    else
+      logger.info "Some of the changed files are not in .auto-approve; this PR requires human review"
+    end
+
+    files_match
   end
 
   def needs_review?(pull_request)
@@ -54,9 +66,13 @@ class ApiController < ApplicationController
     review_is_current = last_review['commit_id'] == pull_request['head']['sha']
     review_is_approved = last_review['state'] == 'APPROVED'
 
-    return true unless review_is_current && review_is_approved
-
-    false
+    if review_is_current && review_is_approved
+      logger.info "PR has already been approved, no action needed"
+      return false
+    else
+      logger.info "PR needs review"
+      return true
+    end
   end
 
   def match?(pattern, file)
@@ -145,11 +161,12 @@ class ApiController < ApplicationController
   end
 
   def verify_github_secret
-    signature = 'sha1=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), ENV['GITHUB_SECRET_TOKEN'], request.raw_post)
-    logger.info "HASH SIGNATURE FROM YAML: #{signature}"
-    logger.info "SECRET FROM YAML: #{ENV['GITHUB_SECRET_TOKEN']}"
-    logger.info "HEADERS: #{request.headers.inspect}"
+    pr = params['api']['pull_request'].to_unsafe_h
 
-    head 401 unless Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
+    signature = 'sha1=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), ENV['GITHUB_SECRET_TOKEN'], request.raw_post)
+
+    if Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
+      head 401
+      logger.info "Invalid authenticity token given by #{pr['base']['repo']['full_name']}"
   end
 end

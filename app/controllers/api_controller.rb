@@ -166,7 +166,6 @@ class ApiController < ApplicationController
   end
 
   def verify_github_secret
-    return
     pr = params['api'].try(:[], 'pull_request').try(:to_unsafe_h).try(:[], 'base')
     project = pr.try(:[], 'repo').try(:[], 'full_name')
     branch = pr.try(:[], 'label')

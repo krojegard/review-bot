@@ -159,10 +159,10 @@ class ApiController < ApplicationController
   end
 
   def check_for_pull_request
-    return if request.env['HTTP_X_HUB_EVENT'] == 'pull_request'
+    return if request.env['HTTP_X_GITHUB_EVENT'] == 'pull_request'
 
     head 400
-    logger.info "Received a request that wasn't a pull_request: #{request.env['HTTP_X_HUB_EVENT']}"
+    logger.info "Received a request that wasn't a pull_request: #{request.env['HTTP_X_GITHUB_EVENT']}"
   end
 
   def verify_github_secret

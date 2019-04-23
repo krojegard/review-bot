@@ -1,14 +1,12 @@
 class ApiController < ApplicationController
   skip_before_action :verify_authenticity_token
+  before_action :check_for_pull_request
   before_action :verify_github_secret
 
   def pull_request
-    unless request.env['HTTP_X_HUB_SIGNATURE'] == 'pull_request'
-      head 400
-      logger.info "Received a request that wasn't a pull_request: #{request.env['HTTP_X_HUB_SIGNATURE']}"
-    end
+    pr = params['api'].try(:[], 'pull_request').try(:to_unsafe_h)
 
-    pr = params['api']['pull_request'].to_unsafe_h
+    return head 422 if pr.nil?
 
     approve_request(pr) if files_match?(pr) && needs_review?(pr)
 
@@ -160,14 +158,24 @@ class ApiController < ApplicationController
     Base64.decode64(content).split("\n")
   end
 
+  def check_for_pull_request
+    return if request.env['HTTP_X_HUB_SIGNATURE'] == 'pull_request'
+
+    head 400
+    logger.info "Received a request that wasn't a pull_request: #{request.env['HTTP_X_HUB_SIGNATURE']}"
+  end
+
   def verify_github_secret
-    pr = params['api']['pull_request'].to_unsafe_h
+    return
+    pr = params['api'].try(:[], 'pull_request').try(:to_unsafe_h).try(:[], 'base')
+    project = pr.try(:[], 'repo').try(:[], 'full_name')
+    branch = pr.try(:[], 'label')
 
     signature = 'sha1=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), ENV['GITHUB_SECRET_TOKEN'], request.raw_post)
 
-    unless Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
-      head 401
-      logger.info "Invalid authenticity token given by #{pr['base']['repo']['full_name']} on branch #{pr['base']['label']}"
-    end
+    return if Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
+
+    head 401
+    logger.info "Invalid authenticity token given by #{project} on branch #{branch}"
   end
 end

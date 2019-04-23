@@ -1,0 +1,3 @@
+config/*
+app/controllers/api_controller.rb
+Gemfile.lock

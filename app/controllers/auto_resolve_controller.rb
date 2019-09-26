@@ -36,15 +36,12 @@ class AutoResolveController < ApplicationController
   }.freeze
 
   def honeybadger
-    Rails.logger.info("\nPARAMS: #{params}\n")
-    Rails.logger.info("\mBODY: #{request.body}\n")
-
+    Rails.logger.info("\n\HONEYBADGER")
     render plain: 'success', status: 200
   end
 
   def pagerduty
-    Rails.logger.info("\nPARAMS: #{params}\n")
-    Rails.logger.info("\mBODY: #{request.body}\n")
+    Rails.logger.info("\n\nPAGERDUTY")
     messages = params[:messages]
     unless messages&.is_a?(Array) && messages.count.positive?
       render plain: 'bad request', status: 400
@@ -56,6 +53,11 @@ class AutoResolveController < ApplicationController
       project = title.match(/\[(.*?)\/.*?\]/)[1] # Outreach
       project_id = PROJECT_IDS[project]
       fault_id = message['incident']['alerts'].first['alert_key'].split('-')[1]
+      Rails.logger.info("\n\nTITLE: #{title}")
+      Rails.logger.info("\n\project: #{project}")
+      Rails.logger.info("\n\project_id: #{project_id}")
+      Rails.logger.info("\n\fault_id: #{fault_id}")
+
 
       case message['type']
       when 'incident.resolve'
@@ -63,6 +65,9 @@ class AutoResolveController < ApplicationController
       when 'incident.assign'
         user_first_name = message['incident']['assignees'].first['summary'].split(' ').first
         user_id = self.users[user_first_name]
+        Rails.logger.info("\n\nUSER FIRST NAME: #{user_first_name}")
+        Rails.logger.info("\n\nUSERS: #{self.users}")
+        Rails.logger.info("\n\nUSER ID: #{user_id}")
         update_honeybadger_issue(project_id, fault_id, {assignee_id: user_id})
       end
     end
@@ -101,7 +106,9 @@ class AutoResolveController < ApplicationController
       result = http.request(request)
       raise "Honeybadger request failed" unless result.code.match?(/2??/)
 
-      @users = JSON.parse(result.body)['members'].map do |user| 
+      Rails.logger.info("BODY: #{result.body}")
+
+      @users = JSON.parse(result.body)['members'].map do |user|
         [
           user['name'].split(' ').first,
           user['id']

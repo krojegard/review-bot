@@ -62,7 +62,7 @@ class AutoResolveController < ApplicationController
       when 'incident.resolve'
         update_honeybadger_issue(project_id, fault_id, {resolved: true})
       when 'incident.assign'
-        user_first_name = message['incident']['assignees'].first['summary'].split(' ').first
+        user_first_name = message['log_entires'].first['incident']['assignees'].first['summary'].split(' ').first
         user_id = self.users[user_first_name]
         Rails.logger.info("\n\nUSER FIRST NAME: #{user_first_name}")
         Rails.logger.info("\n\nUSERS: #{self.users}")

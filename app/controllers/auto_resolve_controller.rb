@@ -2,10 +2,11 @@ class AutoResolveController < ApplicationController
   skip_before_action :verify_authenticity_token
 
   HONEYBADGER_TOKEN = "At5xREmWEhkuJp2XdMyv".freeze
+  PAGERDUTY_TOKEN = "MuwLJo-CrKbPiW39vtx7".freeze
   BRENNEN_USER_ID = 60991
 
   # Keys are PagerDuty ids, keys are HoneyBadger ids
-  PROJECT_IDS = {
+  HB_PROJECT_IDS = {
     'CND' => 35165,
     'EC2 Worker' => 35297,
     'EDU Admin' => 2053,
@@ -35,17 +36,48 @@ class AutoResolveController < ApplicationController
     'TD Admin' => 49828
   }.freeze
 
+  PD_PROJECT_IDS = {
+    "Honeybadger EDU-Specialty" => "PTRSJ4B",
+    "Honeybadger Outreach-Publishing" => "PW5NKM5",
+    "Honeybadger Reporting-Vendors" => "POJBJXS",
+    "Honeybadger TD" => "PQ32C29"
+  }.freeze
+
   def honeybadger
     Rails.logger.info("\n\nHONEYBADGER")
 
     return unless params['fault']&.is_a?(Hash) && params['fault']['environment'] == 'production'
 
-    project_id = params['fault']['project_id']
     fault_id = params['fault']['id']
+    assignee_email = params['fault']['assignee']
+
+    pd_incident = @pd_incidents.select{ |incident| incident[:fault_id] == fault_id }.first
+    if pd_incident.nil? # The incidents we have may be out of date, so refresh them
+      self.fetch_all_pd_incidents
+      pd_incident = @pd_incidents.select{ |incident| incident[:fault_id] == fault_id }.first
+    end
+
+    return if pd_incident.nil? # Incident has already been resolved or doesn't exist
+
     case params['event']
     when 'assigned'
-      user_first_name = params['assignee']['name'].split(' ').first
+      nil
+      # user_first_name = params['assignee']['name'].split(' ').first
+      # data = {
+      #   incident: {
+      #     type: 'incident_reference',
+      #     status: 'resolved'
+      #   }
+      # }
+      # update_pagerduty_issue(pd_incident[:id], assignee_email, data)
     when 'resolved'
+      data = {
+        incident: {
+          type: 'incident_reference',
+          status: 'resolved'
+        }
+      }
+      update_pagerduty_issue(pd_incident[:id], assignee_email, data)
     end
 
     render plain: 'success', status: 200
@@ -62,7 +94,7 @@ class AutoResolveController < ApplicationController
     messages.each do |message|
       title = message['incident']['title'] # i.e "[Outreach/Production] Error Message"
       project = title.match(/\[(.*?)\/.*?\]/)[1] # Outreach
-      project_id = PROJECT_IDS[project]
+      project_id = HB_PROJECT_IDS[project]
       fault_id = message['incident']['alerts'].first['alert_key'].split('-')[1]
       Rails.logger.info("\n\nTITLE: #{title}")
       Rails.logger.info("\n\nproject: #{project}")
@@ -100,6 +132,22 @@ class AutoResolveController < ApplicationController
     end
   end
 
+  def update_pagerduty_issue(incident_id, email, data)
+    uri = URI("https://api.pagerduty.com/incidents/#{incident_id}")
+    request = Net::HTTP::Put.new(uri)
+    request['Authorization'] = "Token token=#{PAGERDUTY_TOKEN}"
+    request['From'] = email
+    request.body = data.to_json
+
+    Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+      result = http.request(request)
+
+      unless result.code.match?(/2??/)
+        raise "Pagerduty request failed"
+      end
+    end
+  end
+
   def users
     @users_last_updated ||= Time.current - 2.days
     # Fetch users from honeybadger every 24 hours
@@ -116,8 +164,6 @@ class AutoResolveController < ApplicationController
       result = http.request(request)
       raise "Honeybadger request failed" unless result.code.match?(/2??/)
 
-      Rails.logger.info("BODY: #{result.body}")
-
       @users = JSON.parse(result.body)['members'].map do |user|
         [
           user['name'].split(' ').first,
@@ -128,5 +174,34 @@ class AutoResolveController < ApplicationController
     end
 
     @users_last_updated = Time.current
+  end
+
+  def fetch_all_pd_incidents
+    @pd_incidents = []
+    more_records = true
+    offset = 0
+
+    while more_records
+      incidents, more_records = fetch_pd_incidents(100, 0, PD_PROJECT_IDS.values)
+      @pd_incidents += incidents
+      offset += 100
+    end
+  end
+
+  def fetch_pd_incidents(limit, offset, project_ids)
+    service_ids = project_ids.map{ |pid| "service_ids[]=#{pid}" }.join('&')
+    uri = URI("https://api.pagerduty.com/incidents?limit=#{limit}&offset=#{offset}&include[]=first_trigger_log_entries&#{service_ids}&statuses[]=acknowledged&statuses[]=triggered")
+    request = Net::HTTP::Get.new(uri)
+    request['Authorization'] = "Token token=#{PAGERDUTY_TOKEN}"
+    body = JSON.parse(result.body)
+    incidents = body['incidents'].map do |incident|
+      {
+        id: incident['id'],
+        incident_number: incident['incident_number'],
+        title: incident['title'],
+        fault_id: incident['first_trigger_log_entry']['channel']['details']['notice']['fault_id']
+      }
+    end
+    [incidents, body['more']]
   end
 end

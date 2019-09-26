@@ -46,7 +46,7 @@ class AutoResolveController < ApplicationController
     Rails.logger.info("\nPARAMS: #{params}\n")
     Rails.logger.info("\mBODY: #{request.body}\n")
     messages = params[:messages]
-    unless messages&.is_a?(Array) && messages.count.possitive?
+    unless messages&.is_a?(Array) && messages.count.positive?
       render plain: 'bad request', status: 400
       return
     end

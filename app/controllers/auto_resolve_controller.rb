@@ -104,7 +104,7 @@ class AutoResolveController < ApplicationController
 
   def fetch_users
     uri = URI("https://app.honeybadger.io/v2/teams/32224")
-    request = Net::HTTP::GET.new(uri)
+    request = Net::HTTP::Get.new(uri)
     request.basic_auth(HONEYBADGER_TOKEN)
 
     Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|

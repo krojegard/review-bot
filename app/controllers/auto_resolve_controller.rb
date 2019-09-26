@@ -6,33 +6,33 @@ class AutoResolveController < ApplicationController
 
   # Keys are PagerDuty ids, keys are HoneyBadger ids
   PROJECT_IDS = {
-    'CND': 35165,
-    'EC2 Worker': 35297,
-    'EDU Admin': 2053,
-    'Feed Processor': 55447,
-    'GP-Beta': 59555,
-    'GradReports': 35485,
-    'GraduatePrograms': 47932,
-    'GTOS': 35164,
-    'H2B': 42944,
-    'Hermes (formerly Postly)': 2055,
-    'Log Parser': 52741,
-    'MBACompass': 64664,
-    'NursingCareer': 59664,
-    'OnlineU': 2681,
-    'Optimal Docs': 58163,
-    'Optimal': 61612,
-    'Outreach': 53618,
-    'Reach Admin': 57030,
-    'Reach Network': 57104,
-    'Redirections': 42198,
-    'Review Bot': 58360,
-    'SocialWorkDegree': 59665,
-    'SR Investment Group': 57105,
-    'SRCorp': 39889,
-    'Switchup': 56512,
-    'Talentdesk': 54667,
-    'TD Admin': 49828
+    'CND' => 35165,
+    'EC2 Worker' => 35297,
+    'EDU Admin' => 2053,
+    'Feed Processor' => 55447,
+    'GP-Beta' => 59555,
+    'GradReports' => 35485,
+    'GraduatePrograms' => 47932,
+    'GTOS' => 35164,
+    'H2B' => 42944,
+    'Hermes (formerly Postly)' => 2055,
+    'Log Parser' => 52741,
+    'MBACompass' => 64664,
+    'NursingCareer' => 59664,
+    'OnlineU' => 2681,
+    'Optimal Docs' => 58163,
+    'Optimal' => 61612,
+    'Outreach' => 53618,
+    'Reach Admin' => 57030,
+    'Reach Network' => 57104,
+    'Redirections' => 42198,
+    'Review Bot' => 58360,
+    'SocialWorkDegree' => 59665,
+    'SR Investment Group' => 57105,
+    'SRCorp' => 39889,
+    'Switchup' => 56512,
+    'Talentdesk' => 54667,
+    'TD Admin' => 49828
   }.freeze
 
   def honeybadger
@@ -54,12 +54,11 @@ class AutoResolveController < ApplicationController
       project_id = PROJECT_IDS[project]
       fault_id = message['incident']['alerts'].first['alert_key'].split('-')[1]
       Rails.logger.info("\n\nTITLE: #{title}")
-      Rails.logger.info("\n\project: #{project}")
-      Rails.logger.info("\n\project_id: #{project_id}")
-      Rails.logger.info("\n\fault_id: #{fault_id}")
+      Rails.logger.info("\n\nproject: #{project}")
+      Rails.logger.info("\n\nproject_id: #{project_id}")
+      Rails.logger.info("\n\nfault_id: #{fault_id}")
 
-
-      case message['type']
+      case message['event']
       when 'incident.resolve'
         update_honeybadger_issue(project_id, fault_id, {resolved: true})
       when 'incident.assign'

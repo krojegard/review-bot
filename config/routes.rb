@@ -3,4 +3,5 @@ Rails.application.routes.draw do
   get '/', to: 'home#index'
   post '/api/v1/pull-request', to: 'api#pull_request'
   post '/api/v1/honeybadger', to: 'auto_resolve#honeybadger'
+  post '/api/v1/pagerduty', to: 'auto_resolve#pagerduty'
 end

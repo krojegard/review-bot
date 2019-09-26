@@ -38,8 +38,13 @@ class AutoResolveController < ApplicationController
   def honeybadger
     Rails.logger.info("\n\nHONEYBADGER")
 
-    case params[:event]
+    return unless params['fault']&.is_a?(Hash) && params['fault']['environment'] == 'production'
+
+    project_id = params['fault']['project_id']
+    fault_id = params['fault']['id']
+    case params['event']
     when 'assigned'
+      user_first_name = params['assignee']['name'].split(' ').first
     when 'resolved'
     end
 

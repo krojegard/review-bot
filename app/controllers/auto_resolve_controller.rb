@@ -83,7 +83,7 @@ class AutoResolveController < ApplicationController
   def update_honeybadger_issue(project_id, fault_id, data)
     uri = URI("https://app.honeybadger.io/v2/projects/#{project_id}/faults/#{fault_id}")
     request = Net::HTTP::Put.new(uri)
-    request.basic_auth(HONEYBADGER_TOKEN)
+    request.basic_auth(HONEYBADGER_TOKEN, nil)
     request.body = {fault: data}.to_json
 
     Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
@@ -105,7 +105,7 @@ class AutoResolveController < ApplicationController
   def fetch_users
     uri = URI("https://app.honeybadger.io/v2/teams/32224")
     request = Net::HTTP::Get.new(uri)
-    request.basic_auth(HONEYBADGER_TOKEN)
+    request.basic_auth(HONEYBADGER_TOKEN, nil)
 
     Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
       result = http.request(request)

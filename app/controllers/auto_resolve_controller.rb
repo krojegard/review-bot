@@ -49,7 +49,7 @@ class AutoResolveController < ApplicationController
     return unless params['fault']&.is_a?(Hash) && params['fault']['environment'] == 'production'
 
     fault_id = params['fault']['id']
-    assignee_email = params['fault']['assignee']
+    assignee_email = params['actor']['email']
 
     pd_incident = @pd_incidents.select{ |incident| incident[:fault_id] == fault_id }.first
     if pd_incident.nil? # The incidents we have may be out of date, so refresh them
@@ -136,6 +136,7 @@ class AutoResolveController < ApplicationController
     uri = URI("https://api.pagerduty.com/incidents/#{incident_id}")
     request = Net::HTTP::Put.new(uri)
     request['Authorization'] = "Token token=#{PAGERDUTY_TOKEN}"
+    request['Content-Type'] = "application/json"
     request['From'] = email
     request.body = data.to_json
 

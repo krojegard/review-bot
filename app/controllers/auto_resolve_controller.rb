@@ -43,7 +43,7 @@ class AutoResolveController < ApplicationController
     "Honeybadger TD" => "PQ32C29"
   }.freeze
 
-  def honeybadger
+  def honeybadger(params)
     Rails.logger.info("\n\nHONEYBADGER")
 
     return unless params['fault']&.is_a?(Hash) && params['fault']['environment'] == 'production'
@@ -51,10 +51,10 @@ class AutoResolveController < ApplicationController
     fault_id = params['fault']['id']
     assignee_email = params['actor']['email']
 
-    pd_incident = @pd_incidents.select{ |incident| incident[:fault_id] == fault_id }.first
+    pd_incident = @pd_incidents&.select{ |incident| incident[:fault_id] == fault_id }&.first
     if pd_incident.nil? # The incidents we have may be out of date, so refresh them
       self.fetch_all_pd_incidents
-      pd_incident = @pd_incidents.select{ |incident| incident[:fault_id] == fault_id }.first
+      pd_incident = @pd_incidents&.select{ |incident| incident[:fault_id] == fault_id }&.first
     end
 
     return if pd_incident.nil? # Incident has already been resolved or doesn't exist

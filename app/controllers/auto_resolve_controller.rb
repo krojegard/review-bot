@@ -43,7 +43,7 @@ class AutoResolveController < ApplicationController
     "Honeybadger TD" => "PQ32C29"
   }.freeze
 
-  def honeybadger(params)
+  def honeybadger
     Rails.logger.info("\n\nHONEYBADGER")
 
     return unless params['fault']&.is_a?(Hash) && params['fault']['environment'] == 'production'

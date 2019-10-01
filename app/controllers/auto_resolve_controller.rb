@@ -193,14 +193,17 @@ class AutoResolveController < ApplicationController
     uri = URI("https://api.pagerduty.com/incidents?limit=#{limit}&offset=#{offset}&include[]=first_trigger_log_entries&#{service_ids}&statuses[]=acknowledged&statuses[]=triggered")
     request = Net::HTTP::Get.new(uri)
     request['Authorization'] = "Token token=#{PAGERDUTY_TOKEN}"
-    body = JSON.parse(result.body)
-    incidents = body['incidents'].map do |incident|
-      {
-        id: incident['id'],
-        incident_number: incident['incident_number'],
-        title: incident['title'],
-        fault_id: incident['first_trigger_log_entry']['channel']['details']['notice']['fault_id']
-      }
+    Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+      result = http.request(request)
+      body = JSON.parse(result.body)
+      incidents = body['incidents'].map do |incident|
+        {
+          id: incident['id'],
+          incident_number: incident['incident_number'],
+          title: incident['title'],
+          fault_id: incident['first_trigger_log_entry']['channel']['details']['notice']['fault_id']
+        }
+      end
     end
     [incidents, body['more']]
   end

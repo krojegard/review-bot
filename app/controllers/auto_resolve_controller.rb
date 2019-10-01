@@ -44,8 +44,6 @@ class AutoResolveController < ApplicationController
   }.freeze
 
   def honeybadger
-    Rails.logger.info("\n\nHONEYBADGER")
-
     return unless params['fault']&.is_a?(Hash) && params['fault']['environment'] == 'production'
 
     fault_id = params['fault']['id']
@@ -56,6 +54,8 @@ class AutoResolveController < ApplicationController
       self.fetch_all_pd_incidents
       pd_incident = @pd_incidents&.select{ |incident| incident[:fault_id] == fault_id }&.first
     end
+
+    Rails.logger.info("No pd incident found for fault id: #{fault_id}") if pd_incident.nil?
 
     return if pd_incident.nil? # Incident has already been resolved or doesn't exist
 
@@ -84,7 +84,6 @@ class AutoResolveController < ApplicationController
   end
 
   def pagerduty
-    Rails.logger.info("\n\nPAGERDUTY")
     messages = params[:messages]
     unless messages&.is_a?(Array) && messages.count.positive?
       render plain: 'bad request', status: 400
@@ -118,6 +117,7 @@ class AutoResolveController < ApplicationController
   end
 
   def update_honeybadger_issue(project_id, fault_id, data)
+    Rails.logger.info("updating honeybadger issue #{project_id}: #{data}")
     uri = URI("https://app.honeybadger.io/v2/projects/#{project_id}/faults/#{fault_id}")
     request = Net::HTTP::Put.new(uri)
     request.basic_auth(HONEYBADGER_TOKEN, nil)
@@ -133,6 +133,7 @@ class AutoResolveController < ApplicationController
   end
 
   def update_pagerduty_issue(incident_id, email, data)
+    Rails.logger.info("updating honeybadger issue #{incident_id}, #{email}: #{data}")
     uri = URI("https://api.pagerduty.com/incidents/#{incident_id}")
     request = Net::HTTP::Put.new(uri)
     request['Authorization'] = "Token token=#{PAGERDUTY_TOKEN}"

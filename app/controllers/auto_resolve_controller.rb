@@ -5,7 +5,7 @@ class AutoResolveController < ApplicationController
   PAGERDUTY_TOKEN = "MuwLJo-CrKbPiW39vtx7".freeze
   BRENNEN_USER_ID = 60991
 
-  # Keys are PagerDuty ids, keys are HoneyBadger ids
+  # Keys are PagerDuty ids, values are HoneyBadger ids
   HB_PROJECT_IDS = {
     'CND' => 35165,
     'EC2 Worker' => 35297,
@@ -43,11 +43,28 @@ class AutoResolveController < ApplicationController
     "Honeybadger TD" => "PQ32C29"
   }.freeze
 
+  # This method is trigged by honeybadger when an issue is resolved or reassigned. For information on honeybadger's
+  # message format, see https://docs.honeybadger.io/guides/services.html#webhook
   def honeybadger
     return unless params['fault']&.is_a?(Hash) && params['fault']['environment'] == 'production'
 
     fault_id = params['fault']['id']
     assignee_email = params['actor']['email']
+
+    ####################################################################################################################
+    #     THIS IS THE PART THAT HAS BEEN GIVING ME TROUBLE
+    #
+    #     When we receive an alert from honeybadger, we are given the incident id. This incident ID is the only thing
+    # that links a honeybadger issue to a pagerduty issue, and in pagerduty it's basically just stored in a metadata
+    # field that isn't searchable (incident['first_trigger_log_entry']['channel']['details']['event'] to be exact). But
+    # even that doesn't always work, because it's possible for multiple HB incidents to be associated with a single PD
+    # incident and `first_trigger_log_entry` only gets the first one.
+    #     So the only way I can think of to get this to work is to do an individual API call for every single PD
+    # incident and then store all of those in memory, but we would have to update those pretty frequently.
+    #     Of course this is just half the problem, propogating changes from HB to PD. Doing it the other way works I
+    # think, but it's hard to test because PD doesn't always send events right away. And in my opinion it would be much
+    # more useful for it to work in the HB -> PD direction anyway.
+    ####################################################################################################################
 
     pd_incident = @pd_incidents&.select{ |incident| incident[:fault_id] == fault_id }&.first
     if pd_incident.nil? # The incidents we have may be out of date, so refresh them
@@ -62,14 +79,7 @@ class AutoResolveController < ApplicationController
     case params['event']
     when 'assigned'
       nil
-      # user_first_name = params['assignee']['name'].split(' ').first
-      # data = {
-      #   incident: {
-      #     type: 'incident_reference',
-      #     status: 'resolved'
-      #   }
-      # }
-      # update_pagerduty_issue(pd_incident[:id], assignee_email, data)
+      # This still needs to be implemented
     when 'resolved'
       data = {
         incident: {
@@ -83,6 +93,9 @@ class AutoResolveController < ApplicationController
     render plain: 'success', status: 200
   end
 
+  # This method is trigged by pagerduty when an issue is resolved or reassigned. Pagerduty doesn't always send messages
+  # right away (it can take several hours sometimes), and it can send multiple messages at once as an array. For 
+  # information on their format, see https://v2.developer.pagerduty.com/docs/webhooks-v2-overview
   def pagerduty
     messages = params[:messages]
     unless messages&.is_a?(Array) && messages.count.positive?
@@ -92,8 +105,8 @@ class AutoResolveController < ApplicationController
 
     messages.each do |message|
       title = message['incident']['title'] # i.e "[Outreach/Production] Error Message"
-      project = title.match(/\[(.*?)\/.*?\]/)[1] # Outreach
-      project_id = HB_PROJECT_IDS[project]
+      project = title.match(/\[(.*?)\/.*?\]/)[1] # Parse the first part of the title to get the honeybadger project name
+      project_id = HB_PROJECT_IDS[project] # Convert the name to a project ID
       fault_id = message['incident']['alerts'].first['alert_key'].split('-')[1]
       Rails.logger.info("\n\nTITLE: #{title}")
       Rails.logger.info("\n\nproject: #{project}")
@@ -116,6 +129,10 @@ class AutoResolveController < ApplicationController
     render plain: 'success', status: 200
   end
 
+  # Updates a honeybadger issue using their API: https://docs.honeybadger.io/api/data.html
+  # @param project_id [String] a value from HB_PROJECT_IDS
+  # @param fault_id [String]
+  # @param data [Hash]
   def update_honeybadger_issue(project_id, fault_id, data)
     Rails.logger.info("updating honeybadger issue #{project_id}: #{data}")
     uri = URI("https://app.honeybadger.io/v2/projects/#{project_id}/faults/#{fault_id}")
@@ -132,8 +149,12 @@ class AutoResolveController < ApplicationController
     end
   end
 
+  # Updates a pagerduty issue using their API: https://v2.developer.pagerduty.com/docs/rest-api
+  # @param incident_id [String]
+  # @param email [String] The user to associate the event with. Without a user the event will fail
+  # @param data [Hash]
   def update_pagerduty_issue(incident_id, email, data)
-    Rails.logger.info("updating honeybadger issue #{incident_id}, #{email}: #{data}")
+    Rails.logger.info("updating pagerduty issue #{incident_id}, #{email}: #{data}")
     uri = URI("https://api.pagerduty.com/incidents/#{incident_id}")
     request = Net::HTTP::Put.new(uri)
     request['Authorization'] = "Token token=#{PAGERDUTY_TOKEN}"
@@ -150,6 +171,8 @@ class AutoResolveController < ApplicationController
     end
   end
 
+  # Returns @users. If @users hasn't been updated in the last 24 hours, fetch the users from honeybadger again to make 
+  # sure they are up to date
   def users
     @users_last_updated ||= Time.current - 2.days
     # Fetch users from honeybadger every 24 hours
@@ -157,6 +180,7 @@ class AutoResolveController < ApplicationController
     @users
   end
 
+  # Gets all users from honeybadger and stores them in @users
   def fetch_users
     uri = URI("https://app.honeybadger.io/v2/teams/32224")
     request = Net::HTTP::Get.new(uri)
@@ -178,6 +202,7 @@ class AutoResolveController < ApplicationController
     @users_last_updated = Time.current
   end
 
+  # Gets all pagerduty incidents and stores them in @pd_incidents
   def fetch_all_pd_incidents
     @pd_incidents = []
     more_records = true
@@ -190,6 +215,10 @@ class AutoResolveController < ApplicationController
     end
   end
 
+  # Gets incidents from pagerduty
+  # @param limit [Int] records to fetch, max 100
+  # @param offset [Int]
+  # @param project_ids [Array<Int>] Values from PD_PROJECT_IDS
   def fetch_pd_incidents(limit, offset, project_ids)
     service_ids = project_ids.map{ |pid| "service_ids[]=#{pid}" }.join('&')
     uri = URI("https://api.pagerduty.com/incidents?limit=#{limit}&offset=#{offset}&include[]=first_trigger_log_entries&#{service_ids}&statuses[]=acknowledged&statuses[]=triggered")

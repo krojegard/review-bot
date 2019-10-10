@@ -4,7 +4,6 @@ class AutoResolveController < ApplicationController
   HONEYBADGER_TOKEN = "At5xREmWEhkuJp2XdMyv".freeze
   PAGERDUTY_TOKEN = "MuwLJo-CrKbPiW39vtx7".freeze
 
-  # Keys are PagerDuty ids, values are HoneyBadger ids
   HB_PROJECT_IDS = {
     'CND' => 35165,
     'EC2 Worker' => 35297,

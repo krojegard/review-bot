@@ -7,7 +7,14 @@
 # server "example.com", user: "deploy", roles: %w{app web}, other_property: :other_value
 # server "db.example.com", user: "deploy", roles: %w{db}
 
-server  'charon-reach.reachnetwork.com',
+server  'charon1-reach.reachnetwork.com',
+        user: 'capuser',
+        roles: %w[web app],
+        ssh_options: {
+          forward_agent: true
+        }
+
+server  'charon2-reach.reachnetwork.com',
         user: 'capuser',
         roles: %w[web app],
         ssh_options: {
@@ -27,8 +34,9 @@ set :branch, 'master'
 # role :app, %w{deploy@example.com}, my_property: :my_value
 # role :web, %w{user1@primary.com user2@additional.com}, other_property: :other_value
 # role :db,  %w{deploy@example.com}
-role :app, "charon-reach.reachnetwork.com"
-role :web, "charon-reach.reachnetwork.com"
+role :app, %w[charon1-reach.reachnetwork.com charon2-reach.reachnetwork.com]
+role :web, %w[charon1-reach.reachnetwork.com charon2-reach.reachnetwork.com]
+role :db,  %w[charon1-reach.reachnetwork.com charon2-reach.reachnetwork.com]
 
 set :rbenv_type, :user # Defaults to: :auto
 set :rbenv_ruby, File.read('.ruby-version').strip # Defaults to: 'default'
